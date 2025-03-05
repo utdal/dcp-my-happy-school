@@ -1,0 +1,635 @@
+import { useState } from "react";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  BarChart as BarChartIcon, 
+  Download, 
+  Calendar, 
+  TrendingUp, 
+  TrendingDown,
+  Filter,
+  Search,
+  AlertCircle
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell
+} from "recharts";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+
+export default function AdminAnalytics() {
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("enrollment");
+  const [timeRange, setTimeRange] = useState("year");
+  const [filterGrade, setFilterGrade] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Mock data for enrollment trends
+  const enrollmentData = [
+    { name: "Grade 1", current: 102, previous: 98 },
+    { name: "Grade 2", current: 98, previous: 95 },
+    { name: "Grade 3", current: 112, previous: 105 },
+    { name: "Grade 4", current: 145, previous: 140 },
+    { name: "Grade 5", current: 138, previous: 142 },
+    { name: "Grade 6", current: 145, previous: 138 },
+    { name: "Grade 7", current: 125, previous: 120 },
+    { name: "Grade 8", current: 118, previous: 115 },
+    { name: "Grade 9", current: 113, previous: 110 },
+    { name: "Grade 10", current: 58, previous: 62 },
+    { name: "Grade 11", current: 52, previous: 55 },
+    { name: "Grade 12", current: 42, previous: 45 }
+  ];
+
+  // Mock data for attendance rates
+  const attendanceData = [
+    { name: "Sep", rate: 97.2 },
+    { name: "Oct", rate: 96.8 },
+    { name: "Nov", rate: 95.5 },
+    { name: "Dec", rate: 94.2 },
+    { name: "Jan", rate: 93.8 },
+    { name: "Feb", rate: 95.1 },
+    { name: "Mar", rate: 96.3 },
+    { name: "Apr", rate: 97.0 },
+    { name: "May", rate: 96.5 }
+  ];
+
+  // Mock data for academic performance
+  const academicData = [
+    { name: "Grade 1", math: 88, english: 85, science: 82 },
+    { name: "Grade 2", math: 85, english: 87, science: 84 },
+    { name: "Grade 3", math: 82, english: 84, science: 86 },
+    { name: "Grade 4", math: 84, english: 82, science: 85 },
+    { name: "Grade 5", math: 86, english: 83, science: 87 },
+    { name: "Grade 6", math: 83, english: 85, science: 84 },
+    { name: "Grade 7", math: 81, english: 84, science: 82 },
+    { name: "Grade 8", math: 79, english: 82, science: 80 },
+    { name: "Grade 9", math: 78, english: 80, science: 79 },
+    { name: "Grade 10", math: 76, english: 78, science: 77 },
+    { name: "Grade 11", math: 75, english: 77, science: 76 },
+    { name: "Grade 12", math: 77, english: 79, science: 78 }
+  ];
+
+  // Mock data for demographic breakdown
+  const demographicData = [
+    { name: "Male", value: 620 },
+    { name: "Female", value: 628 },
+    { name: "Other/Undisclosed", value: 0 }
+  ];
+
+  // Mock data for teacher performance
+  const teacherPerformanceData = [
+    { name: "Ms. Wilson", rating: 4.8, students: 28, subject: "Mathematics" },
+    { name: "Mr. Thompson", rating: 4.6, students: 32, subject: "Science" },
+    { name: "Ms. Garcia", rating: 4.9, students: 25, subject: "English" },
+    { name: "Mr. Davis", rating: 4.5, students: 30, subject: "History" },
+    { name: "Ms. Martinez", rating: 4.7, students: 27, subject: "Art" },
+    { name: "Mr. Johnson", rating: 4.4, students: 35, subject: "Physical Education" },
+    { name: "Ms. Taylor", rating: 4.8, students: 26, subject: "Music" },
+    { name: "Mr. Anderson", rating: 4.3, students: 29, subject: "Computer Science" }
+  ];
+
+  // Filter teacher data based on search query
+  const filteredTeacherData = teacherPerformanceData.filter(teacher => 
+    teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    teacher.subject.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Filter enrollment data based on grade filter
+  const filteredEnrollmentData = filterGrade === "all" 
+    ? enrollmentData 
+    : enrollmentData.filter(grade => grade.name === filterGrade);
+
+  // Filter academic data based on grade filter
+  const filteredAcademicData = filterGrade === "all"
+    ? academicData
+    : academicData.filter(grade => grade.name === filterGrade);
+
+  const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444'];
+
+  // Handle exporting data
+  const handleExportData = () => {
+    toast({
+      title: "Export successful",
+      description: `Analytics data for ${activeTab} has been exported to CSV.`
+    });
+  };
+
+  // Calculate total enrollment change
+  const totalCurrentEnrollment = enrollmentData.reduce((sum, grade) => sum + grade.current, 0);
+  const totalPreviousEnrollment = enrollmentData.reduce((sum, grade) => sum + grade.previous, 0);
+  const enrollmentChangePercentage = ((totalCurrentEnrollment - totalPreviousEnrollment) / totalPreviousEnrollment * 100).toFixed(1);
+
+  // Calculate average attendance
+  const averageAttendance = (attendanceData.reduce((sum, month) => sum + month.rate, 0) / attendanceData.length).toFixed(1);
+
+  // Calculate average academic performance
+  const averageMath = (academicData.reduce((sum, grade) => sum + grade.math, 0) / academicData.length).toFixed(1);
+  const averageEnglish = (academicData.reduce((sum, grade) => sum + grade.english, 0) / academicData.length).toFixed(1);
+  const averageScience = (academicData.reduce((sum, grade) => sum + grade.science, 0) / academicData.length).toFixed(1);
+
+  // Calculate average teacher rating
+  const averageTeacherRating = (teacherPerformanceData.reduce((sum, teacher) => sum + teacher.rating, 0) / teacherPerformanceData.length).toFixed(1);
+
+  return (
+    <div className="space-y-6">
+      <Card className="bg-white dark:bg-gray-800">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Data Analytics</CardTitle>
+            <CardDescription>
+              Analyze school performance metrics and trends
+            </CardDescription>
+          </div>
+          <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
+            <Button 
+              variant="outline"
+              onClick={handleExportData}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Data
+            </Button>
+            <Select 
+              value={timeRange} 
+              onValueChange={setTimeRange}
+            >
+              <SelectTrigger className="w-[180px]">
+                <Calendar className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Select time range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="year">Academic Year</SelectItem>
+                <SelectItem value="semester">Current Semester</SelectItem>
+                <SelectItem value="month">Last 30 Days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-6">
+              <TabsTrigger value="enrollment">Enrollment</TabsTrigger>
+              <TabsTrigger value="attendance">Attendance</TabsTrigger>
+              <TabsTrigger value="academic">Academic Performance</TabsTrigger>
+              <TabsTrigger value="demographics">Demographics</TabsTrigger>
+              <TabsTrigger value="teachers">Teacher Performance</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="enrollment" className="space-y-6">
+              <div className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
+                <Select 
+                  value={filterGrade} 
+                  onValueChange={setFilterGrade}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filter by grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Grades</SelectItem>
+                    {enrollmentData.map(grade => (
+                      <SelectItem key={grade.name} value={grade.name}>{grade.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Total Enrollment</p>
+                      <p className="text-3xl font-bold">{totalCurrentEnrollment}</p>
+                      <div className="flex items-center justify-center mt-1">
+                        {enrollmentChangePercentage > 0 ? (
+                          <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                        ) : (
+                          <TrendingDown className="h-4 w-4 text-red-500 mr-1" />
+                        )}
+                        <span className={enrollmentChangePercentage > 0 ? "text-green-500" : "text-red-500"}>
+                          {enrollmentChangePercentage}% from previous year
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Largest Grade</p>
+                      <p className="text-3xl font-bold">Grade 4</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        145 students
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Retention Rate</p>
+                      <p className="text-3xl font-bold">94.8%</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        +1.2% from previous year
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Enrollment by Grade Level</CardTitle>
+                  <CardDescription>
+                    Current year vs. previous year
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={filteredEnrollmentData}
+                        margin={{
+                          top: 20,
+                          right: 30,
+                          left: 20,
+                          bottom: 5,
+                        }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="current" name="Current Year" fill="#4f46e5" />
+                        <Bar dataKey="previous" name="Previous Year" fill="#94a3b8" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="attendance" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Average Attendance</p>
+                      <p className="text-3xl font-bold">{averageAttendance}%</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        +0.5% from previous year
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Highest Month</p>
+                      <p className="text-3xl font-bold">September</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        97.2% attendance
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Lowest Month</p>
+                      <p className="text-3xl font-bold">January</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        93.8% attendance
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Attendance Rate Trends</CardTitle>
+                  <CardDescription>
+                    Monthly attendance rates for current academic year
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={attendanceData}
+                        margin={{
+                          top: 20,
+                          right: 30,
+                          left: 20,
+                          bottom: 5,
+                        }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis domain={[90, 100]} />
+                        <Tooltip />
+                        <Legend />
+                        <Line 
+                          type="monotone" 
+                          dataKey="rate" 
+                          name="Attendance Rate" 
+                          stroke="#4f46e5" 
+                          activeDot={{ r: 8 }} 
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="academic" className="space-y-6">
+              <div className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
+                <Select 
+                  value={filterGrade} 
+                  onValueChange={setFilterGrade}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filter by grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Grades</SelectItem>
+                    {academicData.map(grade => (
+                      <SelectItem key={grade.name} value={grade.name}>{grade.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Math Average</p>
+                      <p className="text-3xl font-bold">{averageMath}%</p>
+                      <div className="flex items-center justify-center mt-1">
+                        <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                        <span className="text-green-500">
+                          +1.2% from previous year
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">English Average</p>
+                      <p className="text-3xl font-bold">{averageEnglish}%</p>
+                      <div className="flex items-center justify-center mt-1">
+                        <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                        <span className="text-green-500">
+                          +0.8% from previous year
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Science Average</p>
+                      <p className="text-3xl font-bold">{averageScience}%</p>
+                      <div className="flex items-center justify-center mt-1">
+                        <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                        <span className="text-green-500">
+                          +1.5% from previous year
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Academic Performance by Grade</CardTitle>
+                  <CardDescription>
+                    Average scores across core subjects
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={filteredAcademicData}
+                        margin={{
+                          top: 20,
+                          right: 30,
+                          left: 20,
+                          bottom: 5,
+                        }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis domain={[60, 100]} />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="math" name="Mathematics" fill="#4f46e5" />
+                        <Bar dataKey="english" name="English" fill="#10b981" />
+                        <Bar dataKey="science" name="Science" fill="#f59e0b" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="demographics" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Gender Distribution</CardTitle>
+                    <CardDescription>
+                      Breakdown of student population by gender
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={demographicData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                            label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          >
+                            {demographicData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Student Demographics</CardTitle>
+                    <CardDescription>
+                      Additional demographic information
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm font-medium">Local Students</span>
+                          <span className="text-sm">85%</span>
+                        </div>
+                        <Progress value={85} className="h-2" />
+                      </div>
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm font-medium">International Students</span>
+                          <span className="text-sm">15%</span>
+                        </div>
+                        <Progress value={15} className="h-2" />
+                      </div>
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm font-medium">Students with Special Needs</span>
+                          <span className="text-sm">8%</span>
+                        </div>
+                        <Progress value={8} className="h-2" />
+                      </div>
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm font-medium">Scholarship Recipients</span>
+                          <span className="text-sm">12%</span>
+                        </div>
+                        <Progress value={12} className="h-2" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="teachers" className="space-y-6">
+              <div className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
+                <div className="relative w-full md:w-auto">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search teachers or subjects..." 
+                    className="pl-8 w-full md:w-[250px]" 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Total Teachers</p>
+                      <p className="text-3xl font-bold">{teacherPerformanceData.length}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Average Rating</p>
+                      <p className="text-3xl font-bold">{averageTeacherRating}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Out of 5.0
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Top Performer</p>
+                      <p className="text-3xl font-bold">Ms. Garcia</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Rating: 4.9/5.0
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Teacher Performance Ratings</CardTitle>
+                  <CardDescription>
+                    Based on student and parent feedback
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {filteredTeacherData.length > 0 ? (
+                    <div className="space-y-4">
+                      {filteredTeacherData.map((teacher) => (
+                        <div key={teacher.name} className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="font-medium">{teacher.name}</span>
+                              <span className="text-sm text-muted-foreground ml-2">
+                                {teacher.subject} • {teacher.students} students
+                              </span>
+                            </div>
+                            <span className="font-bold">{teacher.rating}/5.0</span>
+                          </div>
+                          <Progress 
+                            value={(teacher.rating / 5) * 100} 
+                            className="h-2" 
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <AlertCircle className="h-12 w-12 text-muted-foreground mb-2" />
+                      <h3 className="text-lg font-medium">No teachers found</h3>
+                      <p className="text-muted-foreground">
+                        Try adjusting your search query
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
