@@ -1,0 +1,340 @@
+import { useState, useEffect } from "react";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { 
+  BookOpen, 
+  FileText, 
+  MessageSquare, 
+  Shield,
+  ArrowRight,
+  Calendar,
+  AlertCircle
+} from "lucide-react";
+import { useData } from "@/contexts/DataContext";
+import { useGrades } from "@/contexts/GradesContext";
+import { useMessages } from "@/contexts/MessagesContext";
+import { useHomework } from "@/contexts/HomeworkContext";
+import { format } from "date-fns";
+
+export default function ParentOverview() {
+  const { students, loading: studentsLoading } = useData();
+  const { grades, loading: gradesLoading } = useGrades();
+  const { messages, unreadCount, loading: messagesLoading } = useMessages();
+  const { homework, loading: homeworkLoading } = useHomework();
+
+  // Function to handle navigation to different sections
+  const handleNavigate = (section) => {
+    const event = new CustomEvent('navigateToSection', { 
+      detail: { section } 
+    });
+    window.dispatchEvent(event);
+  };
+
+  // Calculate GPA for a student
+  const calculateGPA = (studentId: string) => {
+    const studentGrades = grades.filter(grade => grade.student === studentId);
+    if (!studentGrades.length) return 0;
+    
+    const gradePoints = studentGrades.reduce((sum, grade) => {
+      const score = grade.score;
+      if (score >= 93) return sum + 4.0;
+      if (score >= 90) return sum + 3.7;
+      if (score >= 87) return sum + 3.3;
+      if (score >= 83) return sum + 3.0;
+      if (score >= 80) return sum + 2.7;
+      if (score >= 77) return sum + 2.3;
+      if (score >= 73) return sum + 2.0;
+      if (score >= 70) return sum + 1.7;
+      if (score >= 67) return sum + 1.3;
+      if (score >= 63) return sum + 1.0;
+      if (score >= 60) return sum + 0.7;
+      return sum;
+    }, 0);
+
+    return (gradePoints / studentGrades.length).toFixed(2);
+  };
+
+  // Get upcoming assignments for a student
+  const getUpcomingAssignments = (studentId: string) => {
+    const now = new Date();
+    return homework
+      .filter(hw => 
+        hw.student === studentId && 
+        new Date(hw.dueDate) > now &&
+        !hw.submitted
+      )
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .slice(0, 3);
+  };
+
+  // Get recent grades for a student
+  const getRecentGrades = (studentId: string) => {
+    return grades
+      .filter(grade => grade.student === studentId)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 3);
+  };
+
+  // Get grade badge color
+  const getGradeColor = (score: number) => {
+    if (score >= 90) return "text-green-600 dark:text-green-400";
+    if (score >= 80) return "text-blue-600 dark:text-blue-400";
+    if (score >= 70) return "text-yellow-600 dark:text-yellow-400";
+    if (score >= 60) return "text-orange-600 dark:text-orange-400";
+    return "text-red-600 dark:text-red-400";
+  };
+
+  if (studentsLoading || gradesLoading || messagesLoading || homeworkLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!students.length) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+          <h3 className="text-lg font-medium">No children found</h3>
+          <p className="text-muted-foreground">
+            No children are currently associated with your account
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="bg-white dark:bg-gray-800">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Children Enrolled
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{students.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {students.map(s => s.grade).join(', ')}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-white dark:bg-gray-800">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Assignments Due
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {homework.filter(hw => !hw.submitted).length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {homework.filter(hw => 
+                !hw.submitted && 
+                new Date(hw.dueDate) > new Date()
+              ).length} upcoming
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-white dark:bg-gray-800">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Teacher Messages
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{messages.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {unreadCount} unread messages
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-white dark:bg-gray-800">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Recent Assignments</CardTitle>
+              <CardDescription>
+                Your children's recent assignment submissions
+              </CardDescription>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="gap-1"
+              onClick={() => handleNavigate('homework')}
+            >
+              <span className="hidden sm:inline">View All Assignments</span>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {students.map(student => {
+              const upcomingAssignments = getUpcomingAssignments(student.id);
+              return upcomingAssignments.length > 0 ? (
+                <div key={student.id} className="space-y-4">
+                  <h3 className="font-medium">{student.name}</h3>
+                  {upcomingAssignments.map((assignment, index) => (
+                    <div key={assignment.id}>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">{assignment.title}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Due {format(new Date(assignment.dueDate), 'MMM d, yyyy')}
+                          </p>
+                        </div>
+                        <Badge variant="outline">
+                          {Math.ceil((new Date(assignment.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} Days Left
+                        </Badge>
+                      </div>
+                      {index < upcomingAssignments.length - 1 && <Separator className="mt-4" />}
+                    </div>
+                  ))}
+                  {student !== students[students.length - 1] && <Separator className="my-4" />}
+                </div>
+              ) : null;
+            })}
+            {!students.some(student => getUpcomingAssignments(student.id).length > 0) && (
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                <h3 className="text-lg font-medium">No Upcoming Assignments</h3>
+                <p className="text-muted-foreground">
+                  All assignments are up to date
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white dark:bg-gray-800">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Recent Grades</CardTitle>
+              <CardDescription>
+                Latest grades and academic performance
+              </CardDescription>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="gap-1"
+              onClick={() => handleNavigate('grades')}
+            >
+              <span className="hidden sm:inline">View All Grades</span>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {students.map(student => {
+              const recentGrades = getRecentGrades(student.id);
+              return recentGrades.length > 0 ? (
+                <div key={student.id} className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium">{student.name}</h3>
+                    <span className="text-sm text-muted-foreground">
+                      GPA: {calculateGPA(student.id)}
+                    </span>
+                  </div>
+                  {recentGrades.map((grade, index) => (
+                    <div key={grade.id}>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">{grade.subject}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {grade.assignment}
+                          </p>
+                        </div>
+                        <span className={`font-bold ${getGradeColor(grade.score)}`}>
+                          {grade.score}%
+                        </span>
+                      </div>
+                      {index < recentGrades.length - 1 && <Separator className="mt-4" />}
+                    </div>
+                  ))}
+                  {student !== students[students.length - 1] && <Separator className="my-4" />}
+                </div>
+              ) : null;
+            })}
+            {!students.some(student => getRecentGrades(student.id).length > 0) && (
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                <h3 className="text-lg font-medium">No Recent Grades</h3>
+                <p className="text-muted-foreground">
+                  New grades will appear here when available
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card 
+          className="bg-white dark:bg-gray-800 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleNavigate('homework')}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-rose-100 dark:bg-rose-900/20 p-3 rounded-full">
+                <BookOpen className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+              </div>
+              <div>
+                <h3 className="font-medium">Track Homework</h3>
+                <p className="text-sm text-muted-foreground">View assignments and due dates</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card 
+          className="bg-white dark:bg-gray-800 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleNavigate('grades')}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-rose-100 dark:bg-rose-900/20 p-3 rounded-full">
+                <FileText className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+              </div>
+              <div>
+                <h3 className="font-medium">Check Grades</h3>
+                <p className="text-sm text-muted-foreground">View academic performance</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card 
+          className="bg-white dark:bg-gray-800 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleNavigate('messages')}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-rose-100 dark:bg-rose-900/20 p-3 rounded-full">
+                <MessageSquare className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+              </div>
+              <div>
+                <h3 className="font-medium">Message Teachers</h3>
+                <p className="text-sm text-muted-foreground">Communicate with staff</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
