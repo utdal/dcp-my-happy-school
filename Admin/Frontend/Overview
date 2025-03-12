@@ -1,0 +1,165 @@
+import { useState, useEffect } from "react";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { 
+  Users, 
+  Database, 
+  Bell, 
+  BarChart,
+  ArrowRight,
+  Calendar
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useData } from "@/contexts/DataContext";
+import { usersAPI } from "@/services/api";
+
+export default function AdminOverview() {
+  const { toast } = useToast();
+  const { refreshData } = useData();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    newEnrollments: 0,
+    totalUsers: 0,
+    activeUsers: 0
+  });
+
+  // Fetch stats on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch users stats
+        const usersResponse = await usersAPI.getUsers();
+        const users = usersResponse.data || [];
+        
+        // Fetch students stats
+        const studentsResponse = await fetch('/api/students/stats');
+        const studentsData = await studentsResponse.json();
+        
+        setStats({
+          totalStudents: studentsData.data?.totalStudents || 0,
+          newEnrollments: studentsData.data?.newEnrollments || 0,
+          totalUsers: users.length,
+          activeUsers: users.filter(user => user.status === 'active').length
+        });
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load data. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [toast]);
+
+  // Function to handle navigation to different sections
+  const handleNavigate = (section) => {
+    const event = new CustomEvent('navigateToSection', { 
+      detail: { section } 
+    });
+    window.dispatchEvent(event);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="bg-white dark:bg-gray-800">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Students
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalStudents}</div>
+            <p className="text-xs text-muted-foreground">
+              +{stats.newEnrollments} enrolled this week
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-white dark:bg-gray-800">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Users
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.activeUsers} active users
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card 
+          className="bg-white dark:bg-gray-800 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleNavigate('users')}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-indigo-100 dark:bg-indigo-900/20 p-3 rounded-full">
+                <Users className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="font-medium">Manage Users</h3>
+                <p className="text-sm text-muted-foreground">View and manage users</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card 
+          className="bg-white dark:bg-gray-800 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleNavigate('enrollment')}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-indigo-100 dark:bg-indigo-900/20 p-3 rounded-full">
+                <Database className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="font-medium">Enrollment</h3>
+                <p className="text-sm text-muted-foreground">Manage student enrollment</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card 
+          className="bg-white dark:bg-gray-800 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleNavigate('announcements')}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-indigo-100 dark:bg-indigo-900/20 p-3 rounded-full">
+                <Bell className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="font-medium">Announcements</h3>
+                <p className="text-sm text-muted-foreground">Create announcements</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card 
+          className="bg-white dark:bg-gray-800 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleNavigate('analytics')}
+        >
+        </Card>
+      </div>
+    </div>
+  );
+}
