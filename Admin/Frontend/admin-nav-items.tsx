@@ -65,6 +65,14 @@ export default function AdminNavItems({ activeTab, setActiveTab, onLogout }: Adm
         className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20"
         onClick={onLogout}
       >
+        <Button 
+        variant={activeTab === "analytics" ? "default" : "ghost"} 
+        className="w-full justify-start" 
+        onClick={() => setActiveTab("analytics")}
+      >
+        <BarChart className="mr-2 h-4 w-4" />
+        Data Analytics
+      </Button>
         <LogOut className="mr-2 h-4 w-4" />
         Logout
       </Button>
