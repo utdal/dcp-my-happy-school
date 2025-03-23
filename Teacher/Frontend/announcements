@@ -1,0 +1,76 @@
+import { useState } from "react";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { 
+  Bell, 
+  Search, 
+  Calendar,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle
+} from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+export default function TeacherAnnouncements() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterPriority, setFilterPriority] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+
+  // Mock data for announcements (would be fetched from API in a real app)
+  const [announcementsData, setAnnouncementsData] = useState([
+    {
+      id: 1,
+      title: "School Closure - Weather Advisory",
+      content: "Due to the severe weather warning, the school will remain closed tomorrow. All classes will be conducted online. Please check your email for further instructions.",
+      priority: "urgent",
+      date: "May 18, 2025",
+      time: "2:30 PM",
+      author: "David Brown"
+    },
+    {
+      id: 2,
+      title: "Annual Sports Day - Schedule Change",
+      content: "The Annual Sports Day has been rescheduled to June 15th due to venue availability. All previously arranged activities will proceed as planned.",
+      priority: "general",
+      date: "May 15, 2025",
+      time: "10:15 AM",
+      author: "David Brown"
+    },
+    {
+      id: 3,
+      title: "Teacher Professional Development Day",
+      content: "Reminder: The professional development workshop will be held on May 25th. All teaching staff are required to attend. The session will focus on new educational technologies.",
+      priority: "staff",
+      date: "May 10, 2025",
+      time: "4:45 PM",
+      author: "David Brown"
+    },
+    {
+      id: 4,
+      title: "Parent-Teacher Conference",
+      content: "The quarterly parent-teacher conferences will be held on June 5th and 6th. Please sign up for a time slot through the parent portal.",
+      priority: "general",
+      date: "May 8, 2025",
+      time: "4:45 PM",
+      author: "David Brown"
+    },
+    {
+      id: 5,
+      title: "End of Year Ceremony",
+      content: "The end of year ceremony will be held on June 20th at 10:00 AM in the school auditorium. All students and parents are invited to attend.",
+      priority: "general",
+      date: "May 5, 2025",
+      time: "4:45 PM",
+      author: "David Brown"
+    }
+  ]);
